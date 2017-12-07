@@ -1,0 +1,33 @@
+{
+  "native": {
+    "path_ignore": []
+  },
+  "publish": {
+    "web": 0,
+    "native": 1,
+    "path": "bin-release"
+  },
+  "egret_version": "5.0.13",
+  "template": {},
+  "modules": [
+    {
+      "name": "egret"
+    },
+    {
+      "name": "game"
+    },
+    {
+      "name": "res"
+    },
+    {
+      "name": "experimental"
+    },
+    {
+      "name": "tween"
+    },
+    {
+      "name": "promise",
+      "path": "./promise"
+    }
+  ]
+}

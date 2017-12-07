@@ -1,0 +1,90 @@
+{
+	"groups": [
+		{
+			"keys": "egret_icon_png,description_json,cartoon-egret_00_png,cartoon-egret_03_png,doll_bg_png,btn_direction_png,btn_start_png,btn_zhua2_png,btn_zhua1_png,line_png,top_png,zhua1_png,zhua2_png,right_png,left_png,bg_png",
+			"name": "preload"
+		}
+	],
+	"resources": [
+		{
+			"name": "egret_icon_png",
+			"type": "image",
+			"url": "assets/egret_icon.png"
+		},
+		{
+			"name": "description_json",
+			"type": "json",
+			"url": "config/description.json"
+		},
+		{
+			"name": "cartoon-egret_00_png",
+			"type": "image",
+			"url": "assets/cartoon-egret_00.png"
+		},
+		{
+			"name": "cartoon-egret_03_png",
+			"type": "image",
+			"url": "assets/cartoon-egret_03.png"
+		},
+		{
+			"name": "doll_bg_png",
+			"type": "image",
+			"url": "assets/doll_bg.png"
+		},
+		{
+			"name": "btn_direction_png",
+			"type": "image",
+			"url": "assets/btn_direction.png"
+		},
+		{
+			"name": "btn_start_png",
+			"type": "image",
+			"url": "assets/btn_start.png"
+		},
+		{
+			"name": "btn_zhua2_png",
+			"type": "image",
+			"url": "assets/btn_zhua2.png"
+		},
+		{
+			"name": "btn_zhua1_png",
+			"type": "image",
+			"url": "assets/btn_zhua1.png"
+		},
+		{
+			"name": "line_png",
+			"type": "image",
+			"url": "assets/line.png"
+		},
+		{
+			"name": "top_png",
+			"type": "image",
+			"url": "assets/top.png"
+		},
+		{
+			"name": "zhua1_png",
+			"type": "image",
+			"url": "assets/zhua1.png"
+		},
+		{
+			"name": "zhua2_png",
+			"type": "image",
+			"url": "assets/zhua2.png"
+		},
+		{
+			"name": "right_png",
+			"type": "image",
+			"url": "assets/right.png"
+		},
+		{
+			"name": "left_png",
+			"type": "image",
+			"url": "assets/left.png"
+		},
+		{
+			"name": "bg_png",
+			"type": "image",
+			"url": "assets/bg.png"
+		}
+	]
+}

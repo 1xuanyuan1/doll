@@ -1,0 +1,9 @@
+{
+    "useClip": true,
+    "maxImageWidth": 2048,
+    "maxImageHeight": 2048,
+    "defaultResPath": "/Users/duke/Documents/EgretProjects/test/resource/default.res.json",
+    "packGroups": {
+        "preload": true
+    }
+}

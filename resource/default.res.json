@@ -1,7 +1,7 @@
 {
 	"groups": [
 		{
-			"keys": "egret_icon_png,description_json,cartoon-egret_00_png,cartoon-egret_03_png,doll_bg_png,btn_direction_png,btn_start_png,btn_zhua2_png,btn_zhua1_png,line_png,top_png,zhua1_png,zhua2_png,right_png,left_png,bg_png",
+			"keys": "egret_icon_png,description_json,cartoon-egret_00_png,cartoon-egret_03_png,doll_bg_png,btn_direction_png,btn_start_png,btn_zhua2_png,btn_zhua1_png,line_png,top_png,zhua1_png,zhua2_png,right_png,left_png,bg_png,up_png,down_png",
 			"name": "preload"
 		}
 	],
@@ -85,6 +85,16 @@
 			"name": "bg_png",
 			"type": "image",
 			"url": "assets/bg.png"
+		},
+		{
+			"name": "up_png",
+			"type": "image",
+			"url": "assets/up.png"
+		},
+		{
+			"name": "down_png",
+			"type": "image",
+			"url": "assets/down.png"
 		}
 	]
 }

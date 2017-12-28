@@ -1,30 +1,15 @@
 {
 	"groups": [
 		{
-			"keys": "egret_icon_png,description_json,cartoon-egret_00_png,cartoon-egret_03_png,doll_bg_png,btn_direction_png,btn_start_png,btn_zhua2_png,btn_zhua1_png,line_png,top_png,zhua1_png,zhua2_png,right_png,left_png,bg_png,up_png,down_png",
+			"keys": "description_json,doll_bg_png,btn_start_png,line_png,top_png,zhua1_png,zhua2_png,right_png,left_png,bg_png,up_png,down_png,btn_zhua_png,exit_png,wawa_png,wawa1_png,wawa2_png,wawa3_png,wawa4_png,wawa5_png,wawa6_png",
 			"name": "preload"
 		}
 	],
 	"resources": [
 		{
-			"name": "egret_icon_png",
-			"type": "image",
-			"url": "assets/egret_icon.png"
-		},
-		{
 			"name": "description_json",
 			"type": "json",
 			"url": "config/description.json"
-		},
-		{
-			"name": "cartoon-egret_00_png",
-			"type": "image",
-			"url": "assets/cartoon-egret_00.png"
-		},
-		{
-			"name": "cartoon-egret_03_png",
-			"type": "image",
-			"url": "assets/cartoon-egret_03.png"
 		},
 		{
 			"name": "doll_bg_png",
@@ -32,24 +17,9 @@
 			"url": "assets/doll_bg.png"
 		},
 		{
-			"name": "btn_direction_png",
-			"type": "image",
-			"url": "assets/btn_direction.png"
-		},
-		{
 			"name": "btn_start_png",
 			"type": "image",
 			"url": "assets/btn_start.png"
-		},
-		{
-			"name": "btn_zhua2_png",
-			"type": "image",
-			"url": "assets/btn_zhua2.png"
-		},
-		{
-			"name": "btn_zhua1_png",
-			"type": "image",
-			"url": "assets/btn_zhua1.png"
 		},
 		{
 			"name": "line_png",
@@ -95,6 +65,51 @@
 			"name": "down_png",
 			"type": "image",
 			"url": "assets/down.png"
+		},
+		{
+			"name": "btn_zhua_png",
+			"type": "image",
+			"url": "assets/btn_zhua.png"
+		},
+		{
+			"name": "exit_png",
+			"type": "image",
+			"url": "assets/exit.png"
+		},
+		{
+			"name": "wawa_png",
+			"type": "image",
+			"url": "assets/wawa.png"
+		},
+		{
+			"name": "wawa1_png",
+			"type": "image",
+			"url": "assets/wawa1.png"
+		},
+		{
+			"name": "wawa2_png",
+			"type": "image",
+			"url": "assets/wawa2.png"
+		},
+		{
+			"name": "wawa3_png",
+			"type": "image",
+			"url": "assets/wawa3.png"
+		},
+		{
+			"name": "wawa4_png",
+			"type": "image",
+			"url": "assets/wawa4.png"
+		},
+		{
+			"name": "wawa5_png",
+			"type": "image",
+			"url": "assets/wawa5.png"
+		},
+		{
+			"name": "wawa6_png",
+			"type": "image",
+			"url": "assets/wawa6.png"
 		}
 	]
 }

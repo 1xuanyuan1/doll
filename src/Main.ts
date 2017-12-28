@@ -40,10 +40,37 @@ class Main extends egret.DisplayObjectContainer {
     private _isRunning:boolean = false; // 是否正在动
     private _isStarting:boolean = false; // 游戏是否正在运行
     private _probability:number = .5; // 娃娃抓起后 成功的概率
+    private _wawaids = { // 所有的娃娃的ID
+        '5a3e103e85d7c00602406446': 'wawa1', // 长耳兔
+        '5a3e107485d7c00602406447': 'wawa2', // 不二兔
+        '5a445b447e6b1e01155ceb08': 'wawa3', // 小猪佩奇
+        '5a445b7c7e6b1e01155ceb09': 'wawa4', // 玻尿梭鸭
+        '5a445b857e6b1e01155ceb0a': 'wawa5', // 表情萝卜
+        '5a445b8d7e6b1e01155ceb0b': 'wawa6' // 保卫萝卜
+    }
+    private _wawaName:string = 'wawa'
+    private _param = {} // 网络传过来的值
 
     public constructor() {
         super();
+        this.getWawaName()
         this.addEventListener(egret.Event.ADDED_TO_STAGE, this.onAddToStage, this);
+    }
+    /**
+     * 获得娃娃的名字
+     */
+    private getWawaName ():void {
+        let search = window.location.search.replace('?', '')
+        if (search !== '') {
+            let param = {}
+            for (let item of search.split('&')) {
+                let kv = item.split('=')
+                param[kv[0]] = kv[1]
+            }
+            this._param = param
+            this._wawaName = this._wawaids[param['wawaid']] || 'wawa'
+            console.log(param)
+        }
     }
 
     private onAddToStage(event: egret.Event) {
@@ -172,8 +199,6 @@ class Main extends egret.DisplayObjectContainer {
                 .call(() => {
                     // 换爪子
                     this._zhua.texture = RES.getRes('zhua2_png');
-                    this._zhua.x += 38
-                    this._zhua.width = 107;
                     let x:number = this._zhua.x + this._zhua.width / 2
                     let y:number = this._zhua.y + this._zhua.height
 
@@ -191,12 +216,6 @@ class Main extends egret.DisplayObjectContainer {
                                     this.removeChild(mask);
                                     // 在数组里删除该对象
                                     this._masks.splice(parseInt(index), 1);
-                                    if (this._masks.length > 0) {
-                                        this._selectMask.x = this._masks[0].x
-                                        this._selectMask.y = this._masks[0].y
-                                    } else {
-                                        this.removeChild(this._selectMask);
-                                    }
 
                                     egret.Tween.get(toy)
                                     .to({x:toy.x - this._position }, 300, egret.Ease.sineIn).wait(100)
@@ -216,10 +235,16 @@ class Main extends egret.DisplayObjectContainer {
                                     })
                                 } else {
                                     var funcChange = ():void => { // 改变角度
-                                        toy.rotation = Math.random() * 20 - 10
+                                        toy.rotation = Math.random() * 30 - 15
+                                    }
+                                    var funcBack = ():void => { // 改变角度
+                                        toy.rotation = 0
                                     }
                                     egret.Tween.get(toy, {onChange:funcChange, onChangeObj:this})
-                                    .to({y:toy.y + moveHight}, 300, egret.Ease.sineIn )
+                                    .to({y:toy.y + moveHight - 50}, 300, egret.Ease.sineIn ).call(() => {
+                                        egret.Tween.get(toy, {onChange:funcBack, onChangeObj:this}) 
+                                        .to({y:toy.y + 50}, 100, egret.Ease.sineIn)
+                                    })
                                 }
                             })
                             return
@@ -261,16 +286,16 @@ class Main extends egret.DisplayObjectContainer {
             this._position += change
             egret.Tween.get( this._top ).to({x: this._top.x + change }, 100, egret.Ease.sineIn )
             egret.Tween.get( this._line ).to({x: this._line.x + change }, 100, egret.Ease.sineIn )
-            egret.Tween.get( this._zhuaShade ).to({x: this._zhuaShade.x + change }, 100, egret.Ease.sineIn )
             egret.Tween.get( this._zhuaMask ).to({x: this._zhuaMask.x + change }, 100, egret.Ease.sineIn )
             egret.Tween.get( this._zhua ).to({x: this._zhua.x + change }, 100, egret.Ease.sineIn )
             .call(() => {
                 this.moveEnd(action) 
             })
         } else { // 若为垂直运动
+            // 下移不能小于0  上移不能大于220
+            if ((action === Actions.DOWN && this._positionY >= 0) || (action === Actions.UP && this._position <= -220)) return
             let change:number = action === Actions.UP ? -1 * this._step : this._step // 上移则为-
             this._positionY += change
-            egret.Tween.get( this._zhuaShade ).to({y: this._zhuaShade.y + change }, 100, egret.Ease.sineIn )
             egret.Tween.get( this._zhuaMask ).to({y: this._zhuaMask.y + change }, 100, egret.Ease.sineIn )
             .call(() => {
                 this.moveEnd(action) 
@@ -291,12 +316,9 @@ class Main extends egret.DisplayObjectContainer {
             let x = mask.x + mask.width / 2
             let y = mask.y + mask.height / 2
             if (this._zhuaMask.hitTestPoint(x, y, true)) {
-                this._selectMask.x = mask.x;
-                this._selectMask.y = mask.y;
                 // 若选中的阴影不是正好在娃娃阴影的上面 则将其挪到上面
-                if (this.getChildIndex(this._zhuaShade) - this.getChildIndex(mask) !== 1) {
+                if (this.getChildIndex(this._zhua) - this.getChildIndex(mask) !== 1) {
                     let index = this.getChildIndex(mask)
-                    this.setChildIndex(this._zhuaShade, index)
                     this.setChildIndex(this._zhua, index)
                     this.setChildIndex(this._line, index)
                 }
@@ -311,7 +333,6 @@ class Main extends egret.DisplayObjectContainer {
         egret.Tween.get( this._top ).to({x: this._top.x - this._position }, 300, egret.Ease.sineIn )
         egret.Tween.get( this._line ).to({x: this._line.x - this._position }, 300, egret.Ease.sineIn )
         egret.Tween.get( this._zhuaMask ).to({x: this._zhuaMask.x - this._position, y: this._zhuaMask.y - this._positionY }, 300, egret.Ease.sineIn )
-        egret.Tween.get( this._zhuaShade ).to({x: this._zhuaShade.x - this._position, y: this._zhuaMask.y - this._positionY }, 300, egret.Ease.sineIn )
         egret.Tween.get( this._zhua ).to({x: this._zhua.x - this._position }, 300, egret.Ease.sineIn )
         .call(() => {
             // 重置位置
@@ -319,8 +340,6 @@ class Main extends egret.DisplayObjectContainer {
             this._positionY = 0;
             // 换回爪子
             this._zhua.texture = RES.getRes('zhua1_png');
-            this._zhua.x -= 38
-            this._zhua.width = 183;
         })
     }
 
@@ -329,46 +348,35 @@ class Main extends egret.DisplayObjectContainer {
      */
     private initToy () {
         for (let j = 0; j < 3; j++) {
-            for (let i = 0;i < 3; i++) {
-                let toy = this.createBitmapByName("cartoon-egret_00_png")
-                toy.width = 114
-                toy.height = 190
-                toy.x = 460 - i * 120 - (j % 2) * 80;
-                toy.y = 570 - j * 100;
-                toy.rotation = Math.random() * 20 - 10
+            let num = j === 0 ? 3 : 4;
+            let left = j === 0 ? 0 : (3 - j) * 40;
+            for (let i = 0;i < num; i++) {
+                let toy = this.createBitmapByName(`${this._wawaName}_png`)
+                toy.width = 128
+                toy.height = 176
+                toy.x = 560 - i * 140 - left;
+                toy.y = 650 - j * 100;
+                // toy.rotation = Math.random() * 20 - 10
                 toy.name = `toy_${i+1}_${j+1}`
                 this.addChild(toy)
-                this.setChildIndex(toy, 6) // 深度 刚好要在框框内
+                this.setChildIndex(toy, 5) // 深度 刚好要在框框内
                 this._toys.push(toy)
 
                 let mask = new egret.Shape;
                 mask.graphics.lineStyle( 0x000000 )
-                mask.graphics.beginFill( 0x000000 );
-                mask.graphics.drawEllipse( 0, 0, 114, 50 );
+                mask.graphics.beginFill( 0x37516e, 0.2 );
+                mask.graphics.drawEllipse( 0, 0, 100, 40 );
                 mask.graphics.endFill();
-                mask.x = 460 - i * 120 - (j % 2) * 80;
-                mask.y = 730 - j * 100;
+                mask.x = 570 - i * 140 - left;
+                mask.y = 800 - j * 100;
                 mask.name = `mask_${i+1}_${j+1}`
                 this.addChild(mask);
-                this.setChildIndex(mask, 6) // 深度 刚好要在框框内
+                this.setChildIndex(mask, 5) // 深度 刚好要在框框内
                 this._masks.push(mask)
             }
         }
 
-        this._selectMask = new egret.Shape;
-        this._selectMask.name = '_selectMask'
-        this._selectMask.graphics.lineStyle( 0x000000 )
-        this._selectMask.graphics.beginFill( 0x000000 );
-        this._selectMask.graphics.drawEllipse( 0, 0, 114, 50 );
-        this._selectMask.graphics.endFill();
-        this._selectMask.x = 460;
-        this._selectMask.y = 730;
-        this.addChild(this._selectMask);
-        this.setChildIndex(this._selectMask, 6) // 深度 刚好要在框框内
-
-        this._zhuaShade.$setVisible(true);
         this._zhuaMask.$setVisible(true);
-        this._zhuaShade.$mask = this._selectMask
     }
 
     /**
@@ -410,7 +418,6 @@ class Main extends egret.DisplayObjectContainer {
     private _line:egret.Bitmap;
     private _zhua:egret.Bitmap;
     private _zhuaMask:egret.Shape;
-    private _zhuaShade:egret.Shape;
 
 
     // 开始按钮
@@ -419,71 +426,60 @@ class Main extends egret.DisplayObjectContainer {
     private _toys:egret.Bitmap[] = [];  
     // 一堆阴影
     private _masks:egret.Shape[] = [];
-    private _selectMask:egret.Shape;
     //
     /**
      * 创建游戏场景
      * Create a game scene
      */
-    private createGameScene() {
-
+    private createGameScene() {        
 
         this.stage.addEventListener( egret.TouchEvent.TOUCH_BEGIN, this.touchHandler, this );
         // 背景
         let bg = this.createBitmapByName("bg_png");
-        bg.width = 586;
-        bg.height = 745;
-        bg.x = 65;
-        bg.y = 45;
+        bg.width = 646;
+        bg.height = 728;
+        bg.x = 52;
+        bg.y = 130;
+        bg.name = 'bg'
         this.addChild(bg);
 
         // 顶部
         this._top = this.createBitmapByName("top_png");
         this._top.name = 'top'
-        this._top.width = 119;
-        this._top.height = 46;
-        this._top.x = 90;
-        this._top.y = 45;
+        this._top.width = 28;
+        this._top.height = 18;
+        this._top.x = 102;
+        this._top.y = 130;
         this.addChild(this._top);
 
         // 线
         this._line = this.createBitmapByName("line_png");
         this._line.name = 'line'
-        this._line.width = 15;
-        this._line.height = 71;
-        this._line.x = 142;
-        this._line.y = 90;
+        this._line.width = 12;
+        this._line.height = 50;
+        this._line.x = 110;
+        this._line.y = 146;
         this.addChild(this._line);
 
         // 抓
         this._zhua = this.createBitmapByName("zhua1_png");
         this._zhua.name = 'zhua'
-        this._zhua.width = 183;
-        this._zhua.height = 155;
-        this._zhua.x = 59;
-        this._zhua.y = 161;
+        this._zhua.width = 174;
+        this._zhua.height = 190;
+        this._zhua.x = 29;
+        this._zhua.y = 191;
         this.addChild(this._zhua);
 
         this._zhuaMask = new egret.Shape;
         this._zhuaMask.name = 'zhuaMask'
-        this._zhuaMask.graphics.beginFill( 0x333333 );
+        this._zhuaMask.graphics.beginFill( 0x37516e, 0.3 );
         this._zhuaMask.graphics.drawEllipse( 0, 0, 140, 70 );
         this._zhuaMask.graphics.endFill();
         this._zhuaMask.x = 59;
-        this._zhuaMask.y = 730;
+        this._zhuaMask.y = 800;
         this._zhuaMask.$setVisible(false);
         this.addChild(this._zhuaMask);
 
-        this._zhuaShade = new egret.Shape;
-        this._zhuaShade.name = 'zhuaShade'
-        this._zhuaShade.graphics.beginFill( 0x00FF00 );
-        this._zhuaShade.graphics.drawEllipse( 0, 0, 140, 70 );
-        this._zhuaShade.graphics.endFill();
-        this._zhuaShade.x = 59;
-        this._zhuaShade.y = 730;
-        this._zhuaShade.$setVisible(false);
-        this.addChild(this._zhuaShade);
-        
 
         // 娃娃
         // for (let i = 0;i < 4; i++) {
@@ -497,77 +493,82 @@ class Main extends egret.DisplayObjectContainer {
         // }
         
 
+        // 娃娃掉出口
+        let exit = this.createBitmapByName("exit_png");
+        exit.width = 210;
+        exit.height = 204;
+        exit.x = 52;
+        exit.y = 654;
+        exit.name = 'exit'
+        this.addChild(exit);
 
         // 背景
         let dollbg = this.createBitmapByName("doll_bg_png");
         let stageW = this.stage.stageWidth;
         let stageH = this.stage.stageHeight;
-        dollbg.width = stageW;
-        dollbg.height = stageH;
+        dollbg.width = 708;
+        dollbg.height = 906;
+        dollbg.x = 21;
         dollbg.name = 'dollbg'
         this.addChild(dollbg);
-
-        // // 方向键
-        // let direction = this.createBitmapByName("btn_direction_png");
-        // direction.width = 355;
-        // direction.height = 196;
-        // direction.y = 800;
-        // this.addChild(direction);
-
+        
         // 方向键 上
         this._up = this.createBitmapByName("up_png");
         this._up.name = 'up'
-        this._up.width = 119;
-        this._up.height = 109;
-        this._up.x = 120;
-        this._up.y = 750;
+        this._up.width = 90;
+        this._up.height = 94;
+        this._up.x = 160;
+        this._up.y = 940;
         this._up.$setVisible(false);
         this.addChild(this._up);
 
         // 方向键 左
         this._left = this.createBitmapByName("left_png");
         this._left.name = 'left'
-        this._left.width = 179;
-        this._left.height = 119;
-        this._left.y = 840;
+        this._left.width = 90;
+        this._left.height = 94;
+        this._left.x = 40;
+        this._left.y = 1000;
         this._left.$setVisible(false);
         this.addChild(this._left);
 
         // 方向键 右
         this._right = this.createBitmapByName("right_png");
         this._right.name = 'right'
-        this._right.width = 179;
-        this._right.height = 119;
-        this._right.x = 179;
-        this._right.y = 840;
+        this._right.width = 90;
+        this._right.height = 94;
+        this._right.x = 280;
+        this._right.y = 1000;
         this._right.$setVisible(false);
         this.addChild(this._right);
 
         // 方向键 下
         this._down = this.createBitmapByName("down_png");
         this._down.name = 'down'
-        this._down.width = 119;
-        this._down.height = 109;
-        this._down.x = 120;
-        this._down.y = 939;
+        this._down.width = 90;
+        this._down.height = 94;
+        this._down.x = 160;
+        this._down.y = 1060;
         this._down.$setVisible(false);
         this.addChild(this._down);
 
         // 抓的按钮
-        this._btn = this.createBitmapByName("btn_zhua1_png");
-        this._btn.width = 241;
-        this._btn.height = 159;
-        this._btn.x = 370;
-        this._btn.y = 815;
+        this._btn = this.createBitmapByName("btn_zhua_png");
+        this._btn.name = 'btn_zhua'
+        this._btn.width = 188;
+        this._btn.height = 176;
+        this._btn.x = 500;
+        this._btn.y = 930;
         this._btn.$setVisible(false);
         this.addChild(this._btn);
 
         // 开始按钮
         this._start = this.createBitmapByName("btn_start_png");
-        this._start.width = 367;
-        this._start.height = 119;
-        this._start.x = 140;
-        this._start.y = 835;
+        this._btn.name = 'btn_start'
+        this._start.width = 342;
+        this._start.height = 114;
+        this._start.x = 204;
+        this._start.y = 1000;
         this.addChild(this._start);
 
         /// 小圆点，用以提示用户按下位置

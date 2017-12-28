@@ -61,7 +61,6 @@ var Main = (function (_super) {
         _this._toys = [];
         // 一堆阴影
         _this._masks = [];
-        console.log(window.location);
         _this.addEventListener(egret.Event.ADDED_TO_STAGE, _this.onAddToStage, _this);
         return _this;
     }

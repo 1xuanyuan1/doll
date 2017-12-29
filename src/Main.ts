@@ -39,7 +39,9 @@ class Main extends egret.DisplayObjectContainer {
     private _step:number = 10; // 顶部每次点击移动的步
     private _isRunning:boolean = false; // 是否正在动
     private _isStarting:boolean = false; // 游戏是否正在运行
+    private _isCountdown:boolean = false; // 是否正在倒计时 / 本轮游戏是否正在进行
     private _probability:number = .5; // 娃娃抓起后 成功的概率
+    private _catchIndex:number = -1; // 抓到的娃娃的位置  -1时为未抓到
     private _wawaids = { // 所有的娃娃的ID
         '5a3e103e85d7c00602406446': 'wawa1', // 长耳兔
         '5a3e107485d7c00602406447': 'wawa2', // 不二兔
@@ -50,6 +52,8 @@ class Main extends egret.DisplayObjectContainer {
     }
     private _wawaName:string = 'wawa'
     private _param = {} // 网络传过来的值
+    private _time = 30 // 倒计时 默认倒计时30s
+    private _txCountdown:egret.TextField; // 倒计时显示
 
     public constructor() {
         super();
@@ -71,6 +75,114 @@ class Main extends egret.DisplayObjectContainer {
             this._wawaName = this._wawaids[param['wawaid']] || 'wawa'
             console.log(param)
         }
+    }
+    /**
+     * 开始玩游戏
+     */
+    private startGame () {
+        var request = new egret.HttpRequest();
+        request.responseType = egret.HttpResponseType.TEXT;
+        //设置为 POST 请求
+        request.open("api/game/start",egret.HttpMethod.POST);
+        request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        request.setRequestHeader("X-Auth-Token", this._param['token']);
+        request.send();
+        request.addEventListener(egret.Event.COMPLETE,this.onPostStartGame,this);
+    }
+    /**
+     * 开始玩游戏接口回调
+     */
+    private onPostStartGame (res) {
+        try {
+            // 刷新用户剩余游戏币
+            window.parent['updateInfoByGamecoin']();
+        } catch (e) {
+            console.log('error')
+        }
+    }
+    /**
+     * 抓取娃娃
+     */
+    private catchToy () {
+        var request = new egret.HttpRequest();
+        request.responseType = egret.HttpResponseType.TEXT;
+        //设置为 POST 请求
+        request.open("api/game/catch",egret.HttpMethod.POST);
+        request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        request.setRequestHeader("X-Auth-Token", this._param['token']);
+        request.send(`prizeId=${this._param['wawaid']}`);
+        request.addEventListener(egret.Event.COMPLETE,this.onCatchCallback,this);
+    }
+    /**
+     * 抓娃娃回调
+     */
+    private onCatchCallback (event:egret.Event) {
+        // console.log('onCatchCallback', event)
+        var request = <egret.HttpRequest>event.currentTarget;
+        let isSuccess:boolean = request.response != ''
+        let toy:egret.Bitmap = this._toys[this._catchIndex]
+        let moveHight:number = this._zhuaMask.y - this._zhua.y - this._zhua.height - 50;
+        if (isSuccess) {
+            let mask = this._masks[this._catchIndex]
+            // 若成功则删除阴影
+            this.removeChild(mask);
+            // 在数组里删除该对象
+            this._masks.splice(this._catchIndex, 1);
+
+            egret.Tween.get(toy)
+            .to({x:toy.x - this._position }, 300, egret.Ease.sineIn).wait(100)
+            .to({y:toy.y + moveHight - this._positionY}, 300, egret.Ease.sineIn )
+            .call(() => { 
+                // 动画完成后 在画布上删除该对象
+                this.removeChild(toy);
+                // 在数组里删除该对象
+                this._toys.splice(this._catchIndex, 1);
+                // 娃娃抓完后重新开始游戏
+                if (this._toys.length === 0) {
+                    setTimeout(() => {
+                        this._isStarting = false
+                        this.toggleShow(this._isStarting)
+                    })
+                }
+                try {
+                    // 提示用户是否继续玩
+                    let self = this
+                    window.parent['continue'](isSuccess, () => {
+                        // 开始倒计时
+                        self._isCountdown = true
+                        self.countdown(30)
+                    });
+                } catch (e) {
+                    console.log('error')
+                }
+            })
+        } else {
+            var funcChange = ():void => { // 改变角度
+                toy.rotation = Math.random() * 30 - 15
+            }
+            var funcBack = ():void => { // 改变角度
+                toy.rotation = 0
+            }
+            egret.Tween.get(toy, {onChange:funcChange, onChangeObj:this})
+            .to({y:toy.y + moveHight - 50}, 300, egret.Ease.sineIn ).call(() => {
+                egret.Tween.get(toy, {onChange:funcBack, onChangeObj:this}) 
+                .to({y:toy.y + 50}, 100, egret.Ease.sineIn).call(() => { 
+                    try {
+                        // 提示用户是否继续玩
+                        let self = this
+                        window.parent['continue'](isSuccess, () => {
+                            // 开始倒计时
+                            self._isCountdown = true
+                            self.countdown(30)
+                        });
+                    } catch (e) {
+                        console.log('error')
+                    }
+                })
+            })
+        }
+        // 重置被抓取的娃娃序号
+        this._catchIndex = -1
     }
 
     private onAddToStage(event: egret.Event) {
@@ -166,6 +278,9 @@ class Main extends egret.DisplayObjectContainer {
         this._dot.y = stageY;
         
     }
+    /**
+     * 监听事件
+     */
     private directionClick (stageX:number, stageY:number):void {
         if (this._isStarting) {
             if (this._up.hitTestPoint(stageX, stageY, true)) {
@@ -188,71 +303,8 @@ class Main extends egret.DisplayObjectContainer {
                 // console.log('zhua')
                 if (this._isRunning) return
                 this._isRunning = true
-                let moveHight:number = this._zhuaMask.y - this._zhua.y - this._zhua.height - 50;
-                console.log(`moveHight: ${moveHight}`)
-                // 线的动画
-                egret.Tween.get( this._line ).to( {height:this._line.height + moveHight}, 500, egret.Ease.sineIn ).wait(100)
-                .to( {height:this._line.height }, 500, egret.Ease.sineOut ).wait(100)
-                
-                // 爪子的动画
-                egret.Tween.get( this._zhua ).to( {y:this._zhua.y + moveHight}, 500, egret.Ease.sineIn ).wait(100)
-                .call(() => {
-                    // 换爪子
-                    this._zhua.texture = RES.getRes('zhua2_png');
-                    let x:number = this._zhua.x + this._zhua.width / 2
-                    let y:number = this._zhua.y + this._zhua.height
-
-                    // 如果能抓到
-                    for (let index in this._toys) {
-                        let toy:egret.Bitmap = this._toys[index]
-                        if (toy.hitTestPoint(x, y, true)) {
-                            
-                            egret.Tween.get(toy).to( {y:toy.y - moveHight}, 500, egret.Ease.sineOut ).wait(100)
-                            .call(() => {
-                                let isSuccess:boolean = Math.random() > this._probability
-                                if (isSuccess) {
-                                    let mask = this._masks[index]
-                                    // 若成功则删除阴影
-                                    this.removeChild(mask);
-                                    // 在数组里删除该对象
-                                    this._masks.splice(parseInt(index), 1);
-
-                                    egret.Tween.get(toy)
-                                    .to({x:toy.x - this._position }, 300, egret.Ease.sineIn).wait(100)
-                                    .to({y:toy.y + moveHight - this._positionY}, 300, egret.Ease.sineIn )
-                                    .call(() => { 
-                                        // 动画完成后 在画布上删除该对象
-                                        this.removeChild(toy);
-                                        // 在数组里删除该对象
-                                        this._toys.splice(parseInt(index), 1);
-                                        // 娃娃抓完后重新开始游戏
-                                        if (this._toys.length === 0) {
-                                            setTimeout(() => {
-                                                this._isStarting = false
-                                                this.toggleShow(this._isStarting)
-                                            })
-                                        }
-                                    })
-                                } else {
-                                    var funcChange = ():void => { // 改变角度
-                                        toy.rotation = Math.random() * 30 - 15
-                                    }
-                                    var funcBack = ():void => { // 改变角度
-                                        toy.rotation = 0
-                                    }
-                                    egret.Tween.get(toy, {onChange:funcChange, onChangeObj:this})
-                                    .to({y:toy.y + moveHight - 50}, 300, egret.Ease.sineIn ).call(() => {
-                                        egret.Tween.get(toy, {onChange:funcBack, onChangeObj:this}) 
-                                        .to({y:toy.y + 50}, 100, egret.Ease.sineIn)
-                                    })
-                                }
-                            })
-                            return
-                        }
-                    }
-                })
-                .to({y:this._zhua.y}, 500, egret.Ease.sineOut).wait(100)
-                .call(() => { this._isRunning = false; this.back();})
+                this._isCountdown = false
+                this.toZhua()
                 return
             }
         } else {
@@ -260,8 +312,50 @@ class Main extends egret.DisplayObjectContainer {
                 this._isStarting = true
                 this.toggleShow(this._isStarting)
                 this.initToy()
+                
+                // 开始游戏 调用接口
+                this.startGame()
+                // 开始倒计时
+                this._isCountdown = true
+                this.countdown(30)
             }
         } 
+    }
+    /**
+     * 去抓娃娃
+     */
+    private toZhua () {
+        let moveHight:number = this._zhuaMask.y - this._zhua.y - this._zhua.height - 50;
+        // 线的动画
+        egret.Tween.get( this._line ).to( {height:this._line.height + moveHight}, 500, egret.Ease.sineIn ).wait(100)
+        .to( {height:this._line.height }, 500, egret.Ease.sineOut ).wait(100)
+        
+        // 爪子的动画
+        egret.Tween.get( this._zhua ).to( {y:this._zhua.y + moveHight}, 500, egret.Ease.sineIn ).wait(100)
+        .call(() => {
+            // 换爪子
+            this._zhua.texture = RES.getRes('zhua2_png');
+            let x:number = this._zhua.x + this._zhua.width / 2
+            let y:number = this._zhua.y + this._zhua.height
+
+            // 如果能抓到
+            for (let index in this._toys) {
+                let toy:egret.Bitmap = this._toys[index]
+                if (toy.hitTestPoint(x, y, true)) {
+                    
+                    egret.Tween.get(toy).to( {y:toy.y - moveHight}, 500, egret.Ease.sineOut ).wait(100)
+                    .call(() => {
+                        let isSuccess:boolean = Math.random() > this._probability
+                        this._catchIndex = parseInt(index)
+                        // 后台判断 是否抓到娃娃
+                        this.catchToy()
+                    })
+                    return
+                }
+            }
+        })
+        .to({y:this._zhua.y}, 500, egret.Ease.sineOut).wait(100)
+        .call(() => { this._isRunning = false; this.back();})
     }
     /**
      * 是否显示游戏界面
@@ -272,6 +366,7 @@ class Main extends egret.DisplayObjectContainer {
         this._left.$setVisible(isShow)
         this._right.$setVisible(isShow)
         this._btn.$setVisible(isShow)
+        this._txCountdown.$setVisible(isShow)
         this._start.$setVisible(!isShow)
     }
     /**
@@ -518,7 +613,7 @@ class Main extends egret.DisplayObjectContainer {
         this._up.width = 90;
         this._up.height = 94;
         this._up.x = 160;
-        this._up.y = 940;
+        this._up.y = 920;
         this._up.$setVisible(false);
         this.addChild(this._up);
 
@@ -528,7 +623,7 @@ class Main extends egret.DisplayObjectContainer {
         this._left.width = 90;
         this._left.height = 94;
         this._left.x = 40;
-        this._left.y = 1000;
+        this._left.y = 980;
         this._left.$setVisible(false);
         this.addChild(this._left);
 
@@ -538,7 +633,7 @@ class Main extends egret.DisplayObjectContainer {
         this._right.width = 90;
         this._right.height = 94;
         this._right.x = 280;
-        this._right.y = 1000;
+        this._right.y = 980;
         this._right.$setVisible(false);
         this.addChild(this._right);
 
@@ -548,7 +643,7 @@ class Main extends egret.DisplayObjectContainer {
         this._down.width = 90;
         this._down.height = 94;
         this._down.x = 160;
-        this._down.y = 1060;
+        this._down.y = 1040;
         this._down.$setVisible(false);
         this.addChild(this._down);
 
@@ -558,7 +653,7 @@ class Main extends egret.DisplayObjectContainer {
         this._btn.width = 188;
         this._btn.height = 176;
         this._btn.x = 500;
-        this._btn.y = 930;
+        this._btn.y = 910;
         this._btn.$setVisible(false);
         this.addChild(this._btn);
 
@@ -568,7 +663,7 @@ class Main extends egret.DisplayObjectContainer {
         this._start.width = 342;
         this._start.height = 114;
         this._start.x = 204;
-        this._start.y = 1000;
+        this._start.y = 980;
         this.addChild(this._start);
 
         /// 小圆点，用以提示用户按下位置
@@ -577,6 +672,34 @@ class Main extends egret.DisplayObjectContainer {
         this._dot.graphics.drawCircle( 0, 0, 5 );
         this._dot.graphics.endFill();
 
+        /// 提示信息
+        this._txCountdown = new egret.TextField;
+        this._txCountdown.name = 'text_countdown'
+        this._txCountdown.size = 28;
+        this._txCountdown.x = 570;
+        this._txCountdown.y = 1090;
+        this._txCountdown.textAlign = egret.HorizontalAlign.LEFT;
+        this._txCountdown.textColor = 0xFFFFFF;
+        this._txCountdown.type = egret.TextFieldType.DYNAMIC;
+        this._txCountdown.lineSpacing = 6;
+        this._txCountdown.multiline = true;
+        this._txCountdown.text = this._time + 'S';
+        this._txCountdown.$setVisible(false);
+        this.addChild( this._txCountdown );
+    }
+
+    private countdown (time:number = 30) {
+        this._txCountdown.text = time + 'S';
+        setTimeout(() => {
+            if (time > 0) { // 是否倒计时结束
+                // 若已经抓了则不继续倒计时
+                this._isCountdown && this.countdown(time - 1)
+            } else {
+                // 若结束则开始抓
+                this._isCountdown = false
+                this.toZhua()
+            }
+        }, 1000)
     }
 
     private _iTouchCollideStatus:number;

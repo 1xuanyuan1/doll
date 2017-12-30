@@ -59,6 +59,7 @@ var Main = (function (_super) {
         _this._isCountdown = false; // 是否正在倒计时 / 本轮游戏是否正在进行
         _this._probability = .5; // 娃娃抓起后 成功的概率
         _this._catchIndex = -1; // 抓到的娃娃的位置  -1时为未抓到
+        _this._moveHight = -1; // 动画移动的高度
         _this._wawaids = {
             '5a3e103e85d7c00602406446': 'wawa1',
             '5a3e107485d7c00602406447': 'wawa2',
@@ -127,7 +128,7 @@ var Main = (function (_super) {
         var request = new egret.HttpRequest();
         request.responseType = egret.HttpResponseType.TEXT;
         //设置为 POST 请求
-        request.open("api/game/catch", egret.HttpMethod.POST);
+        request.open("http://115.159.39.223:8080/game/catch", egret.HttpMethod.POST);
         request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
         request.setRequestHeader("X-Auth-Token", this._param['token']);
         request.send("prizeId=" + this._param['wawaid']);
@@ -142,7 +143,7 @@ var Main = (function (_super) {
         var request = event.currentTarget;
         var isSuccess = request.response != '';
         var toy = this._toys[this._catchIndex];
-        var moveHight = this._zhuaMask.y - this._zhua.y - this._zhua.height - 50;
+        var moveHight = this._moveHight;
         if (isSuccess) {
             var mask = this._masks[this._catchIndex];
             // 若成功则删除阴影
@@ -166,10 +167,11 @@ var Main = (function (_super) {
                 }
                 try {
                     // 提示用户是否继续玩
+                    var self_1 = _this;
                     window.parent['continue'](isSuccess, function () {
                         // 开始倒计时
-                        _this._isCountdown = true;
-                        _this.countdown(30);
+                        self_1._isCountdown = true;
+                        self_1.countdown(30);
                     });
                 }
                 catch (e) {
@@ -190,10 +192,11 @@ var Main = (function (_super) {
                     .to({ y: toy.y + 50 }, 100, egret.Ease.sineIn).call(function () {
                     try {
                         // 提示用户是否继续玩
+                        var self_2 = _this;
                         window.parent['continue'](isSuccess, function () {
                             // 开始倒计时
-                            _this._isCountdown = true;
-                            _this.countdown(30);
+                            self_2._isCountdown = true;
+                            self_2.countdown(30);
                         });
                     }
                     catch (e) {
@@ -320,7 +323,6 @@ var Main = (function (_super) {
             if (this._start.hitTestPoint(stageX, stageY, true)) {
                 this._isStarting = true;
                 this.toggleShow(this._isStarting);
-                this.initToy();
                 // 开始游戏 调用接口
                 // this.startGame()
                 // 开始倒计时
@@ -335,6 +337,7 @@ var Main = (function (_super) {
     Main.prototype.toZhua = function () {
         var _this = this;
         var moveHight = this._zhuaMask.y - this._zhua.y - this._zhua.height - 50;
+        this._moveHight = moveHight;
         // 线的动画
         egret.Tween.get(this._line).to({ height: this._line.height + moveHight }, 500, egret.Ease.sineIn).wait(100)
             .to({ height: this._line.height }, 500, egret.Ease.sineOut).wait(100);
@@ -401,7 +404,7 @@ var Main = (function (_super) {
         }
         else {
             // 下移不能小于0  上移不能大于220
-            if ((action === Actions.DOWN && this._positionY >= 0) || (action === Actions.UP && this._position <= -220))
+            if ((action === Actions.DOWN && this._positionY >= 0) || (action === Actions.UP && this._positionY <= -220))
                 return;
             var change = action === Actions.UP ? -1 * this._step : this._step; // 上移则为-
             this._positionY += change;
@@ -659,6 +662,7 @@ var Main = (function (_super) {
         this._txCountdown.text = this._time + 'S';
         this._txCountdown.$setVisible(false);
         this.addChild(this._txCountdown);
+        this.initToy();
     };
     Main.prototype.countdown = function (time) {
         var _this = this;

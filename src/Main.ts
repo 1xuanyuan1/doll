@@ -42,6 +42,7 @@ class Main extends egret.DisplayObjectContainer {
     private _isCountdown:boolean = false; // 是否正在倒计时 / 本轮游戏是否正在进行
     private _probability:number = .5; // 娃娃抓起后 成功的概率
     private _catchIndex:number = -1; // 抓到的娃娃的位置  -1时为未抓到
+    private _moveHight:number = -1; // 动画移动的高度
     private _wawaids = { // 所有的娃娃的ID
         '5a3e103e85d7c00602406446': 'wawa1', // 长耳兔
         '5a3e107485d7c00602406447': 'wawa2', // 不二兔
@@ -80,26 +81,41 @@ class Main extends egret.DisplayObjectContainer {
      * 开始玩游戏
      */
     private startGame () {
-        var request = new egret.HttpRequest();
-        request.responseType = egret.HttpResponseType.TEXT;
-        //设置为 POST 请求
-        request.open("api/game/start",egret.HttpMethod.POST);
-        request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-        request.setRequestHeader("X-Auth-Token", this._param['token']);
-        request.send();
-        request.addEventListener(egret.Event.COMPLETE,this.onPostStartGame,this);
-    }
-    /**
-     * 开始玩游戏接口回调
-     */
-    private onPostStartGame (res) {
         try {
-            // 刷新用户剩余游戏币
-            window.parent['updateInfoByGamecoin']();
+            // 提示用户是否有游戏币能开始玩游戏
+            let self = this
+            window.parent['startGame'](() => {
+                self._isStarting = true
+                self.toggleShow(true)
+                self._isCountdown = true
+                self.countdown(30)
+            });
         } catch (e) {
-            console.log('error')
+            console.log('开始玩游戏失败')
         }
     }
+
+    /**
+     * 继续玩游戏
+     * @param {*} isSuccess 是否成功抓到娃娃
+     */
+    private continueGame (isSuccess: boolean) {
+        try {
+            // 提示用户是否继续玩
+            let self = this
+            window.parent['continue'](isSuccess, () => {
+                // 开始倒计时
+                self._isCountdown = true
+                self.countdown(30)
+            }, () => {
+                self._isStarting = false
+                self.toggleShow(false)
+            });
+        } catch (e) {
+            console.log('继续玩游戏失败')
+        }
+    }
+
     /**
      * 抓取娃娃
      */
@@ -121,7 +137,7 @@ class Main extends egret.DisplayObjectContainer {
         var request = <egret.HttpRequest>event.currentTarget;
         let isSuccess:boolean = request.response != ''
         let toy:egret.Bitmap = this._toys[this._catchIndex]
-        let moveHight:number = this._zhuaMask.y - this._zhua.y - this._zhua.height - 50;
+        let moveHight:number = this._moveHight
         if (isSuccess) {
             let mask = this._masks[this._catchIndex]
             // 若成功则删除阴影
@@ -137,24 +153,15 @@ class Main extends egret.DisplayObjectContainer {
                 this.removeChild(toy);
                 // 在数组里删除该对象
                 this._toys.splice(this._catchIndex, 1);
-                // 娃娃抓完后重新开始游戏
+                // 娃娃抓完后 重新填满娃娃  ps.修复
                 if (this._toys.length === 0) {
                     setTimeout(() => {
-                        this._isStarting = false
-                        this.toggleShow(this._isStarting)
-                    })
+                        // this._isStarting = false
+                        // this.toggleShow(this._isStarting)
+                        this.initToy()
+                    }, 0)
                 }
-                try {
-                    // 提示用户是否继续玩
-                    let self = this
-                    window.parent['continue'](isSuccess, () => {
-                        // 开始倒计时
-                        self._isCountdown = true
-                        self.countdown(30)
-                    });
-                } catch (e) {
-                    console.log('error')
-                }
+                this.continueGame(isSuccess)
             })
         } else {
             var funcChange = ():void => { // 改变角度
@@ -167,17 +174,7 @@ class Main extends egret.DisplayObjectContainer {
             .to({y:toy.y + moveHight - 50}, 300, egret.Ease.sineIn ).call(() => {
                 egret.Tween.get(toy, {onChange:funcBack, onChangeObj:this}) 
                 .to({y:toy.y + 50}, 100, egret.Ease.sineIn).call(() => { 
-                    try {
-                        // 提示用户是否继续玩
-                        let self = this
-                        window.parent['continue'](isSuccess, () => {
-                            // 开始倒计时
-                            self._isCountdown = true
-                            self.countdown(30)
-                        });
-                    } catch (e) {
-                        console.log('error')
-                    }
+                    this.continueGame(isSuccess)
                 })
             })
         }
@@ -309,15 +306,16 @@ class Main extends egret.DisplayObjectContainer {
             }
         } else {
             if (this._start.hitTestPoint(stageX, stageY, true)) {
-                this._isStarting = true
-                this.toggleShow(this._isStarting)
-                this.initToy()
-                
-                // 开始游戏 调用接口
+                // 改为调用接口之后才能开始玩游戏
                 this.startGame()
-                // 开始倒计时
-                this._isCountdown = true
-                this.countdown(30)
+
+                //  隐藏的是普通玩游戏
+                // this._isStarting = true
+                // this.toggleShow(this._isStarting)
+                
+                // // 开始倒计时
+                // this._isCountdown = true
+                // this.countdown(30)
             }
         } 
     }
@@ -326,6 +324,7 @@ class Main extends egret.DisplayObjectContainer {
      */
     private toZhua () {
         let moveHight:number = this._zhuaMask.y - this._zhua.y - this._zhua.height - 50;
+        this._moveHight = moveHight
         // 线的动画
         egret.Tween.get( this._line ).to( {height:this._line.height + moveHight}, 500, egret.Ease.sineIn ).wait(100)
         .to( {height:this._line.height }, 500, egret.Ease.sineOut ).wait(100)
@@ -388,7 +387,7 @@ class Main extends egret.DisplayObjectContainer {
             })
         } else { // 若为垂直运动
             // 下移不能小于0  上移不能大于220
-            if ((action === Actions.DOWN && this._positionY >= 0) || (action === Actions.UP && this._position <= -220)) return
+            if ((action === Actions.DOWN && this._positionY >= 0) || (action === Actions.UP && this._positionY <= -220)) return
             let change:number = action === Actions.UP ? -1 * this._step : this._step // 上移则为-
             this._positionY += change
             egret.Tween.get( this._zhuaMask ).to({y: this._zhuaMask.y + change }, 100, egret.Ease.sineIn )
@@ -686,6 +685,8 @@ class Main extends egret.DisplayObjectContainer {
         this._txCountdown.text = this._time + 'S';
         this._txCountdown.$setVisible(false);
         this.addChild( this._txCountdown );
+
+        this.initToy()
     }
 
     private countdown (time:number = 30) {

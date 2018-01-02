@@ -84,7 +84,7 @@ class Main extends egret.DisplayObjectContainer {
         try {
             // 提示用户是否有游戏币能开始玩游戏
             let self = this
-            window.parent['startGame'](() => {
+            window.parent['startGame'](this._param['wawaid'],() => {
                 self._isStarting = true
                 self.toggleShow(true)
                 self._isCountdown = true
@@ -100,20 +100,29 @@ class Main extends egret.DisplayObjectContainer {
      * @param {*} isSuccess 是否成功抓到娃娃
      */
     private continueGame (isSuccess: boolean) {
+        this._isStarting = false
+        this.toggleShow(false)
         try {
             // 提示用户是否继续玩
             let self = this
-            window.parent['continue'](isSuccess, () => {
-                // 开始倒计时
-                self._isCountdown = true
-                self.countdown(30)
-            }, () => {
-                self._isStarting = false
-                self.toggleShow(false)
-            });
+            window.parent['continue'](isSuccess);
         } catch (e) {
             console.log('继续玩游戏失败')
         }
+        // try {
+        //     // 提示用户是否继续玩
+        //     let self = this
+        //     window.parent['continue'](isSuccess, () => {
+        //         // 开始倒计时
+        //         self._isCountdown = true
+        //         self.countdown(30)
+        //     }, () => {
+        //         self._isStarting = false
+        //         self.toggleShow(false)
+        //     });
+        // } catch (e) {
+        //     console.log('继续玩游戏失败')
+        // }
     }
 
     /**

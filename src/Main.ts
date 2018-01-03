@@ -44,17 +44,27 @@ class Main extends egret.DisplayObjectContainer {
     private _catchIndex:number = -1; // 抓到的娃娃的位置  -1时为未抓到
     private _moveHight:number = -1; // 动画移动的高度
     private _wawaids = { // 所有的娃娃的ID
-        '5a3e103e85d7c00602406446': 'wawa1', // 长耳兔
+        '5a3e103e85d7c00602406446': 'wawa0', // 长耳兔
         '5a3e107485d7c00602406447': 'wawa2', // 不二兔
-        '5a445b447e6b1e01155ceb08': 'wawa3', // 小猪佩奇
-        '5a445b7c7e6b1e01155ceb09': 'wawa4', // 玻尿梭鸭
-        '5a445b857e6b1e01155ceb0a': 'wawa5', // 表情萝卜
-        '5a445b8d7e6b1e01155ceb0b': 'wawa6' // 保卫萝卜
+        '5a445b447e6b1e01155ceb08': 'wawa1', // 小猪佩奇
+        '5a445b7c7e6b1e01155ceb09': 'wawa3', // 玻尿梭鸭
+        '5a445b857e6b1e01155ceb0a': 'wawa4', // 表情萝卜
+        '5a445b8d7e6b1e01155ceb0b': 'wawa5', // 保卫萝卜
+        '5a4c86e2c5f56040a6b5f5c5': 'wawa10', // 轻松熊
+        '5a4c8756c5f56040a6b5f5c6': 'wawa13', // 小熊维尼
+        '5a4c8775c5f56040a6b5f5c7': 'wawa8', // 小猪娃娃
+        '5a4c8785c5f56040a6b5f5c8': 'wawa11', // 可爱布朗熊
+        '5a4c8795c5f56040a6b5f5c9': 'wawa7', // 日本熊本熊
+        '5a4c87aac5f56040a6b5f5ca': 'wawa6', // 皮卡丘喷火龙披风
+        '5a4c87bdc5f56040a6b5f5cb': 'wawa14', // hello kitty
+        '5a4c87d3c5f56040a6b5f5cc': 'wawa9', // 可爱长草颜团子
+        '5a4c87ebc5f56040a6b5f5cd': 'wawa12' // 可爱神兽草泥马 
     }
     private _wawaName:string = 'wawa'
     private _param = {} // 网络传过来的值
     private _time = 30 // 倒计时 默认倒计时30s
     private _txCountdown:egret.TextField; // 倒计时显示
+    private _key:string = '' // 没开始一次获取到一个游戏的Key可以用来抓一次娃娃 每次抓完后 重置为空
 
     public constructor() {
         super();
@@ -74,7 +84,7 @@ class Main extends egret.DisplayObjectContainer {
             }
             this._param = param
             this._wawaName = this._wawaids[param['wawaid']] || 'wawa'
-            console.log(param)
+            // console.log(param)
         }
     }
     /**
@@ -84,11 +94,12 @@ class Main extends egret.DisplayObjectContainer {
         try {
             // 提示用户是否有游戏币能开始玩游戏
             let self = this
-            window.parent['startGame'](this._param['wawaid'],() => {
+            window.parent['startGame'](this._param['wawaid'],(key) => {
                 self._isStarting = true
                 self.toggleShow(true)
                 self._isCountdown = true
                 self.countdown(30)
+                self._key = key
             });
         } catch (e) {
             console.log('开始玩游戏失败')
@@ -135,7 +146,7 @@ class Main extends egret.DisplayObjectContainer {
         request.open("api/game/catch",egret.HttpMethod.POST);
         request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
         request.setRequestHeader("X-Auth-Token", this._param['token']);
-        request.send(`prizeId=${this._param['wawaid']}`);
+        request.send(`prizeId=${this._param['wawaid']}&token=${this._key}`);
         request.addEventListener(egret.Event.COMPLETE,this.onCatchCallback,this);
     }
     /**
@@ -144,7 +155,14 @@ class Main extends egret.DisplayObjectContainer {
     private onCatchCallback (event:egret.Event) {
         // console.log('onCatchCallback', event)
         var request = <egret.HttpRequest>event.currentTarget;
-        let isSuccess:boolean = request.response != ''
+        let isSuccess:boolean = false
+        if (request.response != '') {
+            try {
+                isSuccess = JSON.parse(request.response).content != null
+            } catch (e) {
+                console.log('抓娃娃时，回调解析出错')
+            }
+        }
         let toy:egret.Bitmap = this._toys[this._catchIndex]
         let moveHight:number = this._moveHight
         if (isSuccess) {
@@ -455,7 +473,7 @@ class Main extends egret.DisplayObjectContainer {
             let left = j === 0 ? 0 : (3 - j) * 40;
             for (let i = 0;i < num; i++) {
                 let toy = this.createBitmapByName(`${this._wawaName}_png`)
-                toy.width = 128
+                toy.width = 169
                 toy.height = 176
                 toy.x = 560 - i * 140 - left;
                 toy.y = 650 - j * 100;
@@ -470,7 +488,7 @@ class Main extends egret.DisplayObjectContainer {
                 mask.graphics.beginFill( 0x37516e, 0.2 );
                 mask.graphics.drawEllipse( 0, 0, 100, 40 );
                 mask.graphics.endFill();
-                mask.x = 570 - i * 140 - left;
+                mask.x = 590 - i * 140 - left;
                 mask.y = 800 - j * 100;
                 mask.name = `mask_${i+1}_${j+1}`
                 this.addChild(mask);

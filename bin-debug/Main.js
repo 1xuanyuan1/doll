@@ -61,16 +61,26 @@ var Main = (function (_super) {
         _this._catchIndex = -1; // 抓到的娃娃的位置  -1时为未抓到
         _this._moveHight = -1; // 动画移动的高度
         _this._wawaids = {
-            '5a3e103e85d7c00602406446': 'wawa1',
+            '5a3e103e85d7c00602406446': 'wawa0',
             '5a3e107485d7c00602406447': 'wawa2',
-            '5a445b447e6b1e01155ceb08': 'wawa3',
-            '5a445b7c7e6b1e01155ceb09': 'wawa4',
-            '5a445b857e6b1e01155ceb0a': 'wawa5',
-            '5a445b8d7e6b1e01155ceb0b': 'wawa6' // 保卫萝卜
+            '5a445b447e6b1e01155ceb08': 'wawa1',
+            '5a445b7c7e6b1e01155ceb09': 'wawa3',
+            '5a445b857e6b1e01155ceb0a': 'wawa4',
+            '5a445b8d7e6b1e01155ceb0b': 'wawa5',
+            '5a4c86e2c5f56040a6b5f5c5': 'wawa10',
+            '5a4c8756c5f56040a6b5f5c6': 'wawa13',
+            '5a4c8775c5f56040a6b5f5c7': 'wawa8',
+            '5a4c8785c5f56040a6b5f5c8': 'wawa11',
+            '5a4c8795c5f56040a6b5f5c9': 'wawa7',
+            '5a4c87aac5f56040a6b5f5ca': 'wawa6',
+            '5a4c87bdc5f56040a6b5f5cb': 'wawa14',
+            '5a4c87d3c5f56040a6b5f5cc': 'wawa9',
+            '5a4c87ebc5f56040a6b5f5cd': 'wawa12' // 可爱神兽草泥马 
         };
         _this._wawaName = 'wawa';
         _this._param = {}; // 网络传过来的值
         _this._time = 30; // 倒计时 默认倒计时30s
+        _this._key = ''; // 没开始一次获取到一个游戏的Key可以用来抓一次娃娃 每次抓完后 重置为空
         // 一堆娃娃
         _this._toys = [];
         // 一堆阴影
@@ -93,33 +103,57 @@ var Main = (function (_super) {
             }
             this._param = param;
             this._wawaName = this._wawaids[param['wawaid']] || 'wawa';
-            console.log(param);
+            // console.log(param)
         }
     };
     /**
      * 开始玩游戏
      */
     Main.prototype.startGame = function () {
-        var request = new egret.HttpRequest();
-        request.responseType = egret.HttpResponseType.TEXT;
-        //设置为 POST 请求
-        request.open("api/game/start", egret.HttpMethod.POST);
-        request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-        request.setRequestHeader("X-Auth-Token", this._param['token']);
-        request.send();
-        request.addEventListener(egret.Event.COMPLETE, this.onPostStartGame, this);
-    };
-    /**
-     * 开始玩游戏接口回调
-     */
-    Main.prototype.onPostStartGame = function (res) {
         try {
-            // 刷新用户剩余游戏币
-            window.parent['updateInfoByGamecoin']();
+            // 提示用户是否有游戏币能开始玩游戏
+            var self_1 = this;
+            window.parent['startGame'](this._param['wawaid'], function (key) {
+                self_1._isStarting = true;
+                self_1.toggleShow(true);
+                self_1._isCountdown = true;
+                self_1.countdown(30);
+                self_1._key = key;
+            });
         }
         catch (e) {
-            console.log('error');
+            console.log('开始玩游戏失败');
         }
+    };
+    /**
+     * 继续玩游戏
+     * @param {*} isSuccess 是否成功抓到娃娃
+     */
+    Main.prototype.continueGame = function (isSuccess) {
+        this._isStarting = false;
+        this.toggleShow(false);
+        try {
+            // 提示用户是否继续玩
+            var self_2 = this;
+            window.parent['continue'](isSuccess);
+        }
+        catch (e) {
+            console.log('继续玩游戏失败');
+        }
+        // try {
+        //     // 提示用户是否继续玩
+        //     let self = this
+        //     window.parent['continue'](isSuccess, () => {
+        //         // 开始倒计时
+        //         self._isCountdown = true
+        //         self.countdown(30)
+        //     }, () => {
+        //         self._isStarting = false
+        //         self.toggleShow(false)
+        //     });
+        // } catch (e) {
+        //     console.log('继续玩游戏失败')
+        // }
     };
     /**
      * 抓取娃娃
@@ -128,10 +162,10 @@ var Main = (function (_super) {
         var request = new egret.HttpRequest();
         request.responseType = egret.HttpResponseType.TEXT;
         //设置为 POST 请求
-        request.open("http://115.159.39.223:8080/game/catch", egret.HttpMethod.POST);
+        request.open("api/game/catch", egret.HttpMethod.POST);
         request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
         request.setRequestHeader("X-Auth-Token", this._param['token']);
-        request.send("prizeId=" + this._param['wawaid']);
+        request.send("prizeId=" + this._param['wawaid'] + "&token=" + this._key);
         request.addEventListener(egret.Event.COMPLETE, this.onCatchCallback, this);
     };
     /**
@@ -141,7 +175,15 @@ var Main = (function (_super) {
         var _this = this;
         // console.log('onCatchCallback', event)
         var request = event.currentTarget;
-        var isSuccess = request.response != '';
+        var isSuccess = false;
+        if (request.response != '') {
+            try {
+                isSuccess = JSON.parse(request.response).content != null;
+            }
+            catch (e) {
+                console.log('抓娃娃时，回调解析出错');
+            }
+        }
         var toy = this._toys[this._catchIndex];
         var moveHight = this._moveHight;
         if (isSuccess) {
@@ -158,25 +200,15 @@ var Main = (function (_super) {
                 _this.removeChild(toy);
                 // 在数组里删除该对象
                 _this._toys.splice(_this._catchIndex, 1);
-                // 娃娃抓完后重新开始游戏
+                // 娃娃抓完后 重新填满娃娃  ps.修复
                 if (_this._toys.length === 0) {
                     setTimeout(function () {
-                        _this._isStarting = false;
-                        _this.toggleShow(_this._isStarting);
-                    });
+                        // this._isStarting = false
+                        // this.toggleShow(this._isStarting)
+                        _this.initToy();
+                    }, 0);
                 }
-                try {
-                    // 提示用户是否继续玩
-                    var self_1 = _this;
-                    window.parent['continue'](isSuccess, function () {
-                        // 开始倒计时
-                        self_1._isCountdown = true;
-                        self_1.countdown(30);
-                    });
-                }
-                catch (e) {
-                    console.log('error');
-                }
+                _this.continueGame(isSuccess);
             });
         }
         else {
@@ -190,18 +222,7 @@ var Main = (function (_super) {
                 .to({ y: toy.y + moveHight - 50 }, 300, egret.Ease.sineIn).call(function () {
                 egret.Tween.get(toy, { onChange: funcBack, onChangeObj: _this })
                     .to({ y: toy.y + 50 }, 100, egret.Ease.sineIn).call(function () {
-                    try {
-                        // 提示用户是否继续玩
-                        var self_2 = _this;
-                        window.parent['continue'](isSuccess, function () {
-                            // 开始倒计时
-                            self_2._isCountdown = true;
-                            self_2.countdown(30);
-                        });
-                    }
-                    catch (e) {
-                        console.log('error');
-                    }
+                    _this.continueGame(isSuccess);
                 });
             });
         }
@@ -321,13 +342,14 @@ var Main = (function (_super) {
         }
         else {
             if (this._start.hitTestPoint(stageX, stageY, true)) {
-                this._isStarting = true;
-                this.toggleShow(this._isStarting);
-                // 开始游戏 调用接口
-                // this.startGame()
-                // 开始倒计时
-                this._isCountdown = true;
-                this.countdown(30);
+                // 改为调用接口之后才能开始玩游戏
+                this.startGame();
+                //  隐藏的是普通玩游戏
+                // this._isStarting = true
+                // this.toggleShow(this._isStarting)
+                // // 开始倒计时
+                // this._isCountdown = true
+                // this.countdown(30)
             }
         }
     };
@@ -465,7 +487,7 @@ var Main = (function (_super) {
             var left = j === 0 ? 0 : (3 - j) * 40;
             for (var i = 0; i < num; i++) {
                 var toy = this.createBitmapByName(this._wawaName + "_png");
-                toy.width = 128;
+                toy.width = 169;
                 toy.height = 176;
                 toy.x = 560 - i * 140 - left;
                 toy.y = 650 - j * 100;
@@ -479,7 +501,7 @@ var Main = (function (_super) {
                 mask.graphics.beginFill(0x37516e, 0.2);
                 mask.graphics.drawEllipse(0, 0, 100, 40);
                 mask.graphics.endFill();
-                mask.x = 570 - i * 140 - left;
+                mask.x = 590 - i * 140 - left;
                 mask.y = 800 - j * 100;
                 mask.name = "mask_" + (i + 1) + "_" + (j + 1);
                 this.addChild(mask);

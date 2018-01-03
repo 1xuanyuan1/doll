@@ -1,7 +1,7 @@
 {
 	"groups": [
 		{
-			"keys": "description_json,doll_bg_png,btn_start_png,line_png,top_png,zhua1_png,zhua2_png,right_png,left_png,bg_png,up_png,down_png,btn_zhua_png,exit_png,wawa_png,wawa1_png,wawa2_png,wawa3_png,wawa4_png,wawa5_png,wawa6_png",
+			"keys": "description_json,doll_bg_png,btn_start_png,line_png,top_png,zhua1_png,zhua2_png,right_png,left_png,bg_png,up_png,down_png,btn_zhua_png,exit_png,wawa_png,wawa1_png,wawa2_png,wawa3_png,wawa4_png,wawa5_png,wawa6_png,wawa0_png,wawa7_png,wawa8_png,wawa9_png,wawa10_png,wawa11_png,wawa12_png,wawa13_png,wawa14_png",
 			"name": "preload"
 		}
 	],
@@ -110,6 +110,51 @@
 			"name": "wawa6_png",
 			"type": "image",
 			"url": "assets/wawa6.png"
+		},
+		{
+			"name": "wawa0_png",
+			"type": "image",
+			"url": "assets/wawa0.png"
+		},
+		{
+			"name": "wawa7_png",
+			"type": "image",
+			"url": "assets/wawa7.png"
+		},
+		{
+			"name": "wawa8_png",
+			"type": "image",
+			"url": "assets/wawa8.png"
+		},
+		{
+			"name": "wawa9_png",
+			"type": "image",
+			"url": "assets/wawa9.png"
+		},
+		{
+			"name": "wawa10_png",
+			"type": "image",
+			"url": "assets/wawa10.png"
+		},
+		{
+			"name": "wawa11_png",
+			"type": "image",
+			"url": "assets/wawa11.png"
+		},
+		{
+			"name": "wawa12_png",
+			"type": "image",
+			"url": "assets/wawa12.png"
+		},
+		{
+			"name": "wawa13_png",
+			"type": "image",
+			"url": "assets/wawa13.png"
+		},
+		{
+			"name": "wawa14_png",
+			"type": "image",
+			"url": "assets/wawa14.png"
 		}
 	]
 }

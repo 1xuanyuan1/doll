@@ -62,8 +62,8 @@ class Main extends egret.DisplayObjectContainer {
     }
     private _wawaName:string = 'wawa'
     private _param = {} // 网络传过来的值
-    private _time = 30 // 倒计时 默认倒计时30s
-    private _txCountdown:egret.TextField; // 倒计时显示
+    private _gametime = 20 // 一局游戏时间
+    private _time = 20 // 倒计时 默认倒计时30s
     private _key:string = '' // 没开始一次获取到一个游戏的Key可以用来抓一次娃娃 每次抓完后 重置为空
 
     public constructor() {
@@ -98,7 +98,7 @@ class Main extends egret.DisplayObjectContainer {
                 self._isStarting = true
                 self.toggleShow(true)
                 self._isCountdown = true
-                self.countdown(30)
+                self.countdown(this._gametime)
                 self._key = key
             });
         } catch (e) {
@@ -113,6 +113,7 @@ class Main extends egret.DisplayObjectContainer {
     private continueGame (isSuccess: boolean) {
         this._isStarting = false
         this.toggleShow(false)
+        this.setGameTime(this._gametime)
         try {
             // 提示用户是否继续玩
             let self = this
@@ -363,7 +364,6 @@ class Main extends egret.DisplayObjectContainer {
             this._zhua.texture = RES.getRes('zhua2_png');
             let x:number = this._zhua.x + this._zhua.width / 2
             let y:number = this._zhua.y + this._zhua.height
-
             // 如果能抓到
             for (let index in this._toys) {
                 let toy:egret.Bitmap = this._toys[index]
@@ -371,7 +371,6 @@ class Main extends egret.DisplayObjectContainer {
                     
                     egret.Tween.get(toy).to( {y:toy.y - moveHight}, 500, egret.Ease.sineOut ).wait(100)
                     .call(() => {
-                        let isSuccess:boolean = Math.random() > this._probability
                         this._catchIndex = parseInt(index)
                         // 后台判断 是否抓到娃娃
                         this.catchToy()
@@ -379,6 +378,8 @@ class Main extends egret.DisplayObjectContainer {
                     return
                 }
             }
+            // 如果碰到没碰到娃娃
+            this.continueGame(false)
         })
         .to({y:this._zhua.y}, 500, egret.Ease.sineOut).wait(100)
         .call(() => { this._isRunning = false; this.back();})
@@ -392,7 +393,6 @@ class Main extends egret.DisplayObjectContainer {
         this._left.$setVisible(isShow)
         this._right.$setVisible(isShow)
         this._btn.$setVisible(isShow)
-        this._txCountdown.$setVisible(isShow)
         this._start.$setVisible(!isShow)
     }
     /**
@@ -698,26 +698,17 @@ class Main extends egret.DisplayObjectContainer {
         this._dot.graphics.drawCircle( 0, 0, 5 );
         this._dot.graphics.endFill();
 
-        /// 提示信息
-        this._txCountdown = new egret.TextField;
-        this._txCountdown.name = 'text_countdown'
-        this._txCountdown.size = 28;
-        this._txCountdown.x = 570;
-        this._txCountdown.y = 1090;
-        this._txCountdown.textAlign = egret.HorizontalAlign.LEFT;
-        this._txCountdown.textColor = 0xFFFFFF;
-        this._txCountdown.type = egret.TextFieldType.DYNAMIC;
-        this._txCountdown.lineSpacing = 6;
-        this._txCountdown.multiline = true;
-        this._txCountdown.text = this._time + 'S';
-        this._txCountdown.$setVisible(false);
-        this.addChild( this._txCountdown );
-
         this.initToy()
     }
-
-    private countdown (time:number = 30) {
-        this._txCountdown.text = time + 'S';
+    private setGameTime (time:number) {
+        try {
+            window.parent['setGameTime'](time);
+        } catch (e) {
+            console.log('倒计时失败')
+        }
+    }
+    private countdown (time:number) {
+        this.setGameTime(time)
         setTimeout(() => {
             if (time > 0) { // 是否倒计时结束
                 // 若已经抓了则不继续倒计时

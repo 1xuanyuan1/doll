@@ -79,7 +79,8 @@ var Main = (function (_super) {
         };
         _this._wawaName = 'wawa';
         _this._param = {}; // 网络传过来的值
-        _this._time = 30; // 倒计时 默认倒计时30s
+        _this._gametime = 20; // 一局游戏时间
+        _this._time = 20; // 倒计时 默认倒计时30s
         _this._key = ''; // 没开始一次获取到一个游戏的Key可以用来抓一次娃娃 每次抓完后 重置为空
         // 一堆娃娃
         _this._toys = [];
@@ -110,6 +111,7 @@ var Main = (function (_super) {
      * 开始玩游戏
      */
     Main.prototype.startGame = function () {
+        var _this = this;
         try {
             // 提示用户是否有游戏币能开始玩游戏
             var self_1 = this;
@@ -117,7 +119,7 @@ var Main = (function (_super) {
                 self_1._isStarting = true;
                 self_1.toggleShow(true);
                 self_1._isCountdown = true;
-                self_1.countdown(30);
+                self_1.countdown(_this._gametime);
                 self_1._key = key;
             });
         }
@@ -132,6 +134,7 @@ var Main = (function (_super) {
     Main.prototype.continueGame = function (isSuccess) {
         this._isStarting = false;
         this.toggleShow(false);
+        this.setGameTime(this._gametime);
         try {
             // 提示用户是否继续玩
             var self_2 = this;
@@ -375,7 +378,6 @@ var Main = (function (_super) {
                 if (toy.hitTestPoint(x, y, true)) {
                     egret.Tween.get(toy).to({ y: toy.y - moveHight }, 500, egret.Ease.sineOut).wait(100)
                         .call(function () {
-                        var isSuccess = Math.random() > _this._probability;
                         _this._catchIndex = parseInt(index);
                         // 后台判断 是否抓到娃娃
                         _this.catchToy();
@@ -389,6 +391,8 @@ var Main = (function (_super) {
                 if (typeof state_1 === "object")
                     return state_1.value;
             }
+            // 如果碰到没碰到娃娃
+            _this.continueGame(false);
         })
             .to({ y: this._zhua.y }, 500, egret.Ease.sineOut).wait(100)
             .call(function () { _this._isRunning = false; _this.back(); });
@@ -402,7 +406,6 @@ var Main = (function (_super) {
         this._left.$setVisible(isShow);
         this._right.$setVisible(isShow);
         this._btn.$setVisible(isShow);
-        this._txCountdown.$setVisible(isShow);
         this._start.$setVisible(!isShow);
     };
     /**
@@ -483,13 +486,13 @@ var Main = (function (_super) {
      */
     Main.prototype.initToy = function () {
         for (var j = 0; j < 3; j++) {
-            var num = j === 0 ? 3 : 4;
-            var left = j === 0 ? 0 : (3 - j) * 40;
+            var num = j === 0 ? 2 : 3;
+            var left = j === 0 ? 0 : (2 - j) * 60;
             for (var i = 0; i < num; i++) {
                 var toy = this.createBitmapByName(this._wawaName + "_png");
                 toy.width = 169;
                 toy.height = 176;
-                toy.x = 560 - i * 140 - left;
+                toy.x = 500 - i * 180 - left;
                 toy.y = 650 - j * 100;
                 // toy.rotation = Math.random() * 20 - 10
                 toy.name = "toy_" + (i + 1) + "_" + (j + 1);
@@ -501,7 +504,7 @@ var Main = (function (_super) {
                 mask.graphics.beginFill(0x37516e, 0.2);
                 mask.graphics.drawEllipse(0, 0, 100, 40);
                 mask.graphics.endFill();
-                mask.x = 590 - i * 140 - left;
+                mask.x = 530 - i * 180 - left;
                 mask.y = 800 - j * 100;
                 mask.name = "mask_" + (i + 1) + "_" + (j + 1);
                 this.addChild(mask);
@@ -670,26 +673,19 @@ var Main = (function (_super) {
         this._dot.graphics.beginFill(0x00ff00);
         this._dot.graphics.drawCircle(0, 0, 5);
         this._dot.graphics.endFill();
-        /// 提示信息
-        this._txCountdown = new egret.TextField;
-        this._txCountdown.name = 'text_countdown';
-        this._txCountdown.size = 28;
-        this._txCountdown.x = 570;
-        this._txCountdown.y = 1090;
-        this._txCountdown.textAlign = egret.HorizontalAlign.LEFT;
-        this._txCountdown.textColor = 0xFFFFFF;
-        this._txCountdown.type = egret.TextFieldType.DYNAMIC;
-        this._txCountdown.lineSpacing = 6;
-        this._txCountdown.multiline = true;
-        this._txCountdown.text = this._time + 'S';
-        this._txCountdown.$setVisible(false);
-        this.addChild(this._txCountdown);
         this.initToy();
+    };
+    Main.prototype.setGameTime = function (time) {
+        try {
+            window.parent['setGameTime'](time);
+        }
+        catch (e) {
+            console.log('倒计时失败');
+        }
     };
     Main.prototype.countdown = function (time) {
         var _this = this;
-        if (time === void 0) { time = 30; }
-        this._txCountdown.text = time + 'S';
+        this.setGameTime(time);
         setTimeout(function () {
             if (time > 0) {
                 // 若已经抓了则不继续倒计时

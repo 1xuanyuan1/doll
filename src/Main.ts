@@ -469,13 +469,13 @@ class Main extends egret.DisplayObjectContainer {
      */
     private initToy () {
         for (let j = 0; j < 3; j++) {
-            let num = j === 0 ? 3 : 4;
-            let left = j === 0 ? 0 : (3 - j) * 40;
+            let num = j === 0 ? 2 : 3;
+            let left = j === 0 ? 0 : (2 - j) * 60;
             for (let i = 0;i < num; i++) {
                 let toy = this.createBitmapByName(`${this._wawaName}_png`)
                 toy.width = 169
                 toy.height = 176
-                toy.x = 560 - i * 140 - left;
+                toy.x = 500 - i * 180 - left;
                 toy.y = 650 - j * 100;
                 // toy.rotation = Math.random() * 20 - 10
                 toy.name = `toy_${i+1}_${j+1}`
@@ -488,7 +488,7 @@ class Main extends egret.DisplayObjectContainer {
                 mask.graphics.beginFill( 0x37516e, 0.2 );
                 mask.graphics.drawEllipse( 0, 0, 100, 40 );
                 mask.graphics.endFill();
-                mask.x = 590 - i * 140 - left;
+                mask.x = 530 - i * 180 - left;
                 mask.y = 800 - j * 100;
                 mask.name = `mask_${i+1}_${j+1}`
                 this.addChild(mask);
